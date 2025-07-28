@@ -17,7 +17,8 @@
 
 <body class="min-h-screen flex flex-col md:flex-row bg-gray-100">
 
-<form id="brandingForm" class="w-full md:w-1/3 order-2 md:order-none bg-white p-8 flex flex-col gap-6 shadow-lg" enctype="multipart/form-data">
+<form id="brandingForm" method="POST" class="w-full md:w-1/3 order-2 md:order-none bg-white p-8 flex flex-col gap-6 shadow-lg" enctype="multipart/form-data">
+    @csrf
     <h2 class="text-3xl font-extrabold mb-6">Branding Sandbox</h2>
 
     <!-- GLOBAL SETTINGS -->
@@ -200,7 +201,7 @@
             </label>
             <label class="block">
                 <span class="font-semibold">Team Member 1 Image URL</span>
-                <input type="text" name="team1_img" id="team1_img" class="block w-full mt-2 p-2 border rounded" placeholder="https://i.pravatar.cc/150?img=11" />
+                <input type="text" name="team1_img" id="team1_img" class="block w-full mt-2 p-2 border rounded" placeholder="https://picsum.photos/400/250?random=10" />
             </label>
 
             <!-- Team member 2 -->
@@ -214,7 +215,7 @@
             </label>
             <label class="block">
                 <span class="font-semibold">Team Member 2 Image URL</span>
-                <input type="text" name="team2_img" id="team2_img" class="block w-full mt-2 p-2 border rounded" placeholder="https://i.pravatar.cc/150?img=22" />
+                <input type="text" name="team2_img" id="team2_img" class="block w-full mt-2 p-2 border rounded" placeholder="https://picsum.photos/400/250?random=11" />
             </label>
         </div>
     </details>
@@ -322,14 +323,16 @@
 
     <!-- Submit -->
     <div class="sticky bottom-0 bg-white pt-4 mt-6 mb-6 z-10">
-        <button type="submit" class="w-full bg-blue-700 text-white rounded-lg py-4 font-semibold text-lg shadow-md hover:bg-blue-800 transition-colors duration-300 ease-in-out">
+        <button id="generate-preview-btn" type="button" class="w-full bg-blue-700 text-white rounded-lg py-4 font-semibold text-lg shadow-md hover:bg-blue-800 transition-colors duration-300 ease-in-out">
             Generate Preview
         </button>
 
-        <button onclick="downloadPreview()"  class="mt-2 w-full bg-blue-700 text-white rounded-lg py-4 font-semibold text-lg shadow-md hover:bg-blue-800 transition-colors duration-300 ease-in-out">
-            Save Preview as Image
+        <button type="button" onclick="openModal()" class="mt-4 w-full bg-blue-700 text-white rounded-lg py-4 font-semibold text-lg shadow-md hover:bg-blue-800 transition-colors duration-300 ease-in-out">
+            Ask for meeting
         </button>
+
     </div>
+
 </form>
 
 <!-- Preview -->
@@ -408,12 +411,12 @@
         <h2 class="text-3xl font-bold mb-8">Meet Our Team</h2>
         <div class="flex flex-wrap justify-center gap-8">
             <div class="w-64 text-center">
-                <img src="https://i.pravatar.cc/150?img=11" class="rounded-full w-32 h-32 mx-auto mb-4" />
+                <img src="https://picsum.photos/400/250?random=12" class="rounded-full w-32 h-32 mx-auto mb-4" />
                 <h4 class="font-semibold text-lg">Jane Doe</h4>
                 <p class="text-sm text-gray-500">Creative Director</p>
             </div>
             <div class="w-64 text-center">
-                <img src="https://i.pravatar.cc/150?img=22" class="rounded-full w-32 h-32 mx-auto mb-4" />
+                <img src="https://picsum.photos/400/250?random=13" class="rounded-full w-32 h-32 mx-auto mb-4" />
                 <h4 class="font-semibold text-lg">John Smith</h4>
                 <p class="text-sm text-gray-500">Lead Developer</p>
             </div>
@@ -468,28 +471,120 @@
 
 </div>
 
+<!-- Modal -->
+<!-- Modal -->
+<div id="demoModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg max-w-md w-full shadow-lg">
+        <h2 class="text-2xl font-bold mb-4">Request a Demo</h2>
+        <p class="mb-4">Please leave your name and email address. We’ll get back to you shortly!</p>
+        <form id="demoRequestForm" onsubmit="submitFullRequest(event)">
+            <label class="block mb-2">
+                <span class="font-semibold">Name</span>
+                <input type="text" id="user_name" name="user_name" class="w-full mt-1 p-2 border rounded" required />
+            </label>
+            <label class="block mb-4">
+                <span class="font-semibold">Email</span>
+                <input type="email" id="user_email" name="user_email" class="w-full mt-1 p-2 border rounded" required />
+            </label>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal()" class="bg-gray-300 text-black px-4 py-2 rounded">Cancel</button>
+                <button type="submit" class="bg-blue-700 text-white px-4 py-2 rounded">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-    function downloadPreview() {
+    function openModal() {
+        document.getElementById('demoModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('demoModal').classList.add('hidden');
+    }
+
+    async function submitFullRequest(e) {
+        e.preventDefault();
+
+        const userName = document.getElementById('user_name').value.trim();
+        const userEmail = document.getElementById('user_email').value.trim();
+
+        if (!userName || !userEmail) {
+            alert('Please enter your name and email.');
+            return;
+        }
+
         const previewElement = document.getElementById('preview-content');
 
-        html2canvas(previewElement, {
+        // Take screenshot with html2canvas
+        const canvas = await html2canvas(previewElement, {
             useCORS: true,
             scrollY: -window.scrollY,
             scale: 2
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'preview.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
         });
+        const imageData = canvas.toDataURL('image/png');
+
+        // Collect data from brandingForm
+        const brandingForm = document.getElementById('brandingForm');
+        const brandingData = new FormData(brandingForm);
+
+        // Append name, email, and screenshot
+        brandingData.append('user_name', userName);
+        brandingData.append('user_email', userEmail);
+        brandingData.append('preview_image', imageData);
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        try {
+            const response = await fetch('/send-branding-email', {
+                method: 'POST',
+                body: brandingData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            if (response.ok) {
+                alert('Thank you! You will receive a confirmation by email shortly.');
+                closeModal();
+                document.getElementById('demoRequestForm').reset();
+                brandingForm.reset();
+            } else {
+                alert('Something went wrong while submitting the form.');
+            }
+        } catch (error) {
+            console.error('Error during submission:', error);
+            alert('A network error occurred.');
+        }
     }
 </script>
+
+
+
+{{--<script>--}}
+{{--    function downloadPreview() {--}}
+{{--        const previewElement = document.getElementById('preview-content');--}}
+
+{{--        html2canvas(previewElement, {--}}
+{{--            useCORS: true,--}}
+{{--            scrollY: -window.scrollY,--}}
+{{--            scale: 2--}}
+{{--        }).then(canvas => {--}}
+{{--            const link = document.createElement('a');--}}
+{{--            link.download = 'preview.png';--}}
+{{--            link.href = canvas.toDataURL('image/png');--}}
+{{--            link.click();--}}
+{{--        });--}}
+{{--    }--}}
+{{--</script>--}}
 
 <!-- JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+
         const form = document.querySelector('form'); // zorg dat je form een <form> is
         const preview = document.getElementById('preview-content');
         const logoInput = document.getElementById('logo');
@@ -720,7 +815,7 @@
                 team1ImgPreview.src = url;
                 team1ImgPreview.classList.remove('hidden');
             } else {
-                team1ImgPreview.src = "https://i.pravatar.cc/150?img=11";
+                team1ImgPreview.src = "https://picsum.photos/400/250?random=14";
             }
         });
 
@@ -738,7 +833,7 @@
                 team2ImgPreview.src = url;
                 team2ImgPreview.classList.remove('hidden');
             } else {
-                team2ImgPreview.src = "https://i.pravatar.cc/150?img=22";
+                team2ImgPreview.src = "https://picsum.photos/400/250?random=15";
             }
         });
 
@@ -823,8 +918,8 @@
             ctaButton.style.color = ctaButtonTextColorInput.value;
         });
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
+        const btn = document.getElementById('generate-preview-btn');
+        btn.addEventListener('click', () => {
 
             if (preview.classList.contains('hidden')) {
                 preview.classList.remove('hidden');
@@ -845,154 +940,7 @@
     });
 
 </script>
-{{--<script>--}}
-{{--    const form = document.getElementById('brandingForm');--}}
 
-{{--    form.addEventListener('submit', e => {--}}
-{{--        e.preventDefault();--}}
-
-{{--        // Helper functie om value te pakken (optioneel fallback)--}}
-{{--        const val = (id, fallback = '') => (document.getElementById(id)?.value || fallback).trim();--}}
-
-{{--        // Verzamel data--}}
-{{--        const brandName = val('brand_name', 'Your Brand');--}}
-{{--        const primary = val('primary_color');--}}
-{{--        const secondary = val('secondary_color');--}}
-{{--        const font = val('font', 'inherit');--}}
-{{--        const heroText = val('hero_text');--}}
-{{--        const aboutText = val('about_text');--}}
-{{--        const service1 = val('service1_title') && val('service1_desc') ? `${val('service1_title')}: ${val('service1_desc')}` : '';--}}
-{{--        const team1 = val('team1_name') && val('team1_role') ? `${val('team1_name')} - ${val('team1_role')}` : '';--}}
-{{--        const faq1 = val('faq1_q') && val('faq1_a') ? `${val('faq1_q')}: ${val('faq1_a')}` : '';--}}
-{{--        const testimonial1 = val('testimonial1') && val('testimonial1_client') ? `"${val('testimonial1')}" - ${val('testimonial1_client')}` : '';--}}
-{{--        const ctaText = `${val('cta_headline')}\n${val('cta_subtext')}\nButton: ${val('cta_button')}`;--}}
-
-{{--        const backgroundStyle = val('background_style', 'solid');--}}
-{{--        const backgroundColor = val('background_color', '#ffffff');--}}
-{{--        const buttonStyle = val('button_style', 'rounded');--}}
-
-{{--        // Toon preview--}}
-{{--        const preview = document.getElementById('preview-content');--}}
-{{--        if (preview) preview.classList.remove('hidden');--}}
-
-{{--        // Update tekstuele onderdelen--}}
-{{--        ['preview-brand-name', 'hero-brand-name', 'about-brand-name', 'footer-brand-name'].forEach(id => {--}}
-{{--            const el = document.getElementById(id);--}}
-{{--            if (el) el.textContent = brandName;--}}
-{{--        });--}}
-
-{{--        document.getElementById('footer-year').textContent = new Date().getFullYear();--}}
-
-{{--        const setText = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text; };--}}
-{{--        setText('preview-hero-text', heroText);--}}
-{{--        setText('preview-about-text', aboutText);--}}
-{{--        setText('preview-services-text', service1);--}}
-{{--        setText('preview-team-text', team1);--}}
-{{--        setText('preview-faq-text', faq1);--}}
-{{--        setText('preview-testimonials-text', testimonial1);--}}
-{{--        setText('preview-cta-text', ctaText);--}}
-
-{{--        // Kleuren header/footer en font--}}
-{{--        ['preview-header', 'preview-footer'].forEach(id => {--}}
-{{--            const el = document.getElementById(id);--}}
-{{--            if (el) el.style.backgroundColor = primary;--}}
-{{--        });--}}
-{{--        ['preview-header','preview-hero','preview-about','preview-services','preview-team','preview-faq','preview-testimonials','preview-cta','preview-gallery','preview-footer'].forEach(id => {--}}
-{{--            const el = document.getElementById(id);--}}
-{{--            if(el) el.style.fontFamily = font;--}}
-{{--        });--}}
-
-{{--        // Hero achtergrond--}}
-{{--        const hero = document.getElementById('preview-hero');--}}
-{{--        if(hero){--}}
-{{--            if(backgroundStyle === 'solid'){--}}
-{{--                hero.style.background = backgroundColor;--}}
-{{--            } else if(backgroundStyle === 'gradient'){--}}
-{{--                hero.style.background = `linear-gradient(135deg, ${backgroundColor}, ${secondary})`;--}}
-{{--            } else if(backgroundStyle === 'pattern'){--}}
-{{--                hero.style.background = `repeating-linear-gradient(45deg, ${backgroundColor}, ${backgroundColor} 10px, ${secondary} 10px, ${secondary} 20px)`;--}}
-{{--            }--}}
-
-{{--            // Kleur tekst: simpele contrast check--}}
-{{--            const rgb = hexToRgb(getComputedStyle(hero).backgroundColor || backgroundColor);--}}
-{{--            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;--}}
-{{--            hero.style.color = brightness > 155 ? '#1f2937' : '#f6f6f6';--}}
-
-{{--            // Button styling--}}
-{{--            const btn = hero.querySelector('button');--}}
-{{--            if(btn){--}}
-{{--                btn.style.backgroundColor = primary;--}}
-{{--                btn.style.color = 'white';--}}
-{{--                btn.className = 'px-6 py-3 font-semibold transition'; // reset--}}
-{{--                if(buttonStyle === 'rounded') btn.classList.add('rounded'), btn.style.boxShadow = 'none';--}}
-{{--                else if(buttonStyle === 'square') btn.classList.add('rounded-none'), btn.style.boxShadow = 'none';--}}
-{{--                else if(buttonStyle === 'shadow') btn.classList.add('rounded', 'shadow-lg'), btn.style.boxShadow = '';--}}
-{{--            }--}}
-{{--        }--}}
-
-{{--        // Functie om hex naar rgb te converteren--}}
-{{--        function hexToRgb(hex) {--}}
-{{--            let c = hex.replace('#', '');--}}
-{{--            if (c.length === 3) c = c.split('').map(ch => ch + ch).join('');--}}
-{{--            const bigint = parseInt(c, 16);--}}
-{{--            return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };--}}
-{{--        }--}}
-
-{{--        // Afbeeldingen preview functies (hero, gallery, team, testimonial, logo)--}}
-{{--        const previewImages = [--}}
-{{--            {inputId: 'hero_image', previewId: 'preview-hero-image', fallback: 'https://picsum.photos/1200/500?random=99', isSingle: true},--}}
-{{--            {inputId: 'logo', previewId: 'preview-logo', fallback: 'https://picsum.photos/150/80?random=logo', isSingle: true},--}}
-{{--            {inputId: 'gallery_images', previewId: 'preview-gallery', fallbackCount: 3, fallbackBaseUrl: 'https://picsum.photos/400/250?random=', isSingle: false},--}}
-{{--            {inputId: 'team_images', previewId: 'preview-team', fallbackCount: 3, fallbackBaseUrl: 'https://picsum.photos/300/200?random=team', isSingle: false},--}}
-{{--            {inputId: 'testimonial_images', previewId: 'preview-testimonials', fallbackCount: 3, fallbackBaseUrl: 'https://picsum.photos/100/100?random=testimonial', isSingle: false, classes: 'rounded-full shadow w-24 h-24 object-cover mx-auto'}--}}
-{{--        ];--}}
-
-{{--        previewImages.forEach(({inputId, previewId, fallback, fallbackCount, fallbackBaseUrl, isSingle, classes}) => {--}}
-{{--            const input = document.getElementById(inputId);--}}
-{{--            const previewEl = document.getElementById(previewId);--}}
-{{--            if(!previewEl) return;--}}
-
-{{--            if(isSingle){--}}
-{{--                if(input?.files?.[0]){--}}
-{{--                    const reader = new FileReader();--}}
-{{--                    reader.onload = e => {--}}
-{{--                        previewEl.src = e.target.result;--}}
-{{--                        previewEl.classList.remove('hidden');--}}
-{{--                    };--}}
-{{--                    reader.readAsDataURL(input.files[0]);--}}
-{{--                } else {--}}
-{{--                    previewEl.src = fallback;--}}
-{{--                    previewEl.classList.remove('hidden');--}}
-{{--                }--}}
-{{--            } else {--}}
-{{--                const container = previewEl.querySelector('.grid');--}}
-{{--                if(!container) return;--}}
-{{--                container.innerHTML = '';--}}
-{{--                if(input?.files?.length > 0){--}}
-{{--                    Array.from(input.files).forEach(file => {--}}
-{{--                        const reader = new FileReader();--}}
-{{--                        reader.onload = e => {--}}
-{{--                            const img = document.createElement('img');--}}
-{{--                            img.src = e.target.result;--}}
-{{--                            img.alt = "User uploaded image";--}}
-{{--                            img.className = classes || 'rounded shadow';--}}
-{{--                            container.appendChild(img);--}}
-{{--                        };--}}
-{{--                        reader.readAsDataURL(file);--}}
-{{--                    });--}}
-{{--                } else {--}}
-{{--                    for(let i = 1; i <= fallbackCount; i++){--}}
-{{--                        const img = document.createElement('img');--}}
-{{--                        img.src = fallbackBaseUrl + i;--}}
-{{--                        img.alt = `Fallback image ${i}`;--}}
-{{--                        img.className = classes || 'rounded shadow';--}}
-{{--                        container.appendChild(img);--}}
-{{--                    }--}}
-{{--                }--}}
-{{--            }--}}
-{{--        });--}}
-{{--    });--}}
-{{--</script>--}}
 
 
 

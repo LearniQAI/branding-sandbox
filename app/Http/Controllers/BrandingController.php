@@ -3,29 +3,42 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class BrandingController extends Controller
 {
-    public function preview(Request $request)
+    public function sendEmail(Request $request)
     {
-        $request->validate([
-            'logo' => 'required|image|max:2048',
-            'primary_color' => 'required|string',
-            'secondary_color' => 'required|string',
-            'font' => 'required|string',
-        ]);
+        $data = $request->all();
 
-        $logoPath = $request->file('logo')->store('logos', 'public');
-        $logoUrl = asset('storage/' . $logoPath);
+        // Decode base64 image
+        $imageData = $data['preview_image'] ?? null;
+        if (!$imageData) {
+            return response()->json(['error' => 'No preview image provided'], 422);
+        }
 
-        return response()->json([
-            'preview' => [
-                'logo' => $logoUrl,
-                'primary_color' => $request->input('primary_color'),
-                'secondary_color' => $request->input('secondary_color'),
-                'font' => $request->input('font'),
-                'brand_name' => $request->input('brand_name') ?? null,
-            ]
-        ]);
+        $image = str_replace('data:image/png;base64,', '', $imageData);
+        $image = str_replace(' ', '+', $image);
+        $imageBinary = base64_decode($image);
+        $imagePath = storage_path('app/public/preview.png');
+
+        // Save image
+        file_put_contents($imagePath, $imageBinary);
+
+        // Email to organization
+        Mail::send('emails.branding-request', ['data' => $data], function ($message) use ($imagePath) {
+            $message->to(['courses@learniq.online', 'timmaters1997@gmail.com'])
+                ->subject('New Branding Demo Request')
+                ->attach($imagePath);
+        });
+
+        // Email to user
+        Mail::send('emails.branding-confirmation', ['name' => $data['user_name']], function ($message) use ($data, $imagePath) {
+            $message->to($data['user_email'])
+                ->subject('Thank you for your demo request!')
+                ->attach($imagePath); // Attach screenshot also for user
+        });
+
+        return response()->json(['success' => true]);
     }
 }
